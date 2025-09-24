@@ -1,0 +1,5 @@
+# Logs directory for Winston logger
+# This directory is created automatically by the application
+# Log files will be rotated automatically when they reach the size limit
+
+*.log
