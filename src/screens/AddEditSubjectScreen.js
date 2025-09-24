@@ -251,7 +251,7 @@ const AddEditSubjectScreen = ({ navigation, route }) => {
 
             {/* Info Box */}
             <View style={styles.infoBox}>
-              <Text style={styles.infoIcon}>💡</Text>
+              <Ionicons name="information-circle" size={16} color="#007AFF" />
               <Text style={styles.infoText}>
                 Choose a color and icon that helps you quickly identify this subject.
                 The target attendance percentage will be used to track your progress.

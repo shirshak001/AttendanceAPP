@@ -15,10 +15,10 @@ export const SUBJECT_COLORS = [
   { id: 'slate', color: '#64748b', name: 'Slate' },
 ];
 
-// Subject icons
+// Subject icons (Ionicon names)
 export const SUBJECT_ICONS = [
-  '📚', '🔬', '🧮', '🎨', '🏃‍♂️', '💻', '🌍', '📖', 
-  '⚗️', '🎵', '🏛️', '📊', '🔭', '🧪', '📐', '🎭'
+  'book', 'flask', 'calculator', 'color-palette', 'fitness', 'laptop', 'earth', 'library', 
+  'beaker', 'musical-notes', 'library-outline', 'bar-chart', 'telescope', 'test-tube', 'triangle', 'theater'
 ];
 
 class SubjectService {

@@ -321,25 +321,25 @@ class AttendanceService {
     const statusInfo = {
       [ATTENDANCE_STATUS.PRESENT]: {
         label: 'Present',
-        icon: '✅',
+        iconName: 'checkmark-circle',
         color: '#4CAF50',
         bgColor: '#E8F5E8',
       },
       [ATTENDANCE_STATUS.ABSENT]: {
         label: 'Absent',
-        icon: '❌',
+        iconName: 'close-circle',
         color: '#F44336',
         bgColor: '#FFEBEE',
       },
       [ATTENDANCE_STATUS.LATE]: {
         label: 'Late',
-        icon: '⏰',
+        iconName: 'time',
         color: '#FF9800',
         bgColor: '#FFF3E0',
       },
       [ATTENDANCE_STATUS.EXCUSED]: {
         label: 'Excused',
-        icon: '📝',
+        iconName: 'document-text',
         color: '#9C27B0',
         bgColor: '#F3E5F5',
       },
@@ -347,7 +347,7 @@ class AttendanceService {
 
     return statusInfo[status] || {
       label: 'Unknown',
-      icon: '❓',
+      iconName: 'help-circle',
       color: '#757575',
       bgColor: '#F5F5F5',
     };

@@ -9,6 +9,7 @@ import {
   Animated,
   SafeAreaView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import AuthService from '../services/AuthService';
 
 const { width, height } = Dimensions.get('window');
@@ -19,7 +20,7 @@ const onboardingData = [
     title: 'Add Your Subjects',
     subtitle: 'Create and manage all your courses in one place',
     description: 'Add subject details like name, code, and target attendance percentage to get started.',
-    icon: '📚',
+    iconName: 'school',
     bgColor: '#4f46e5',
   },
   {
@@ -27,7 +28,7 @@ const onboardingData = [
     title: 'Build Your Timetable',
     subtitle: 'Set up your weekly class schedule',
     description: 'Create a personalized timetable by assigning subjects to specific time slots for each day.',
-    icon: '📅',
+    iconName: 'calendar',
     bgColor: '#7c3aed',
   },
   {
@@ -35,7 +36,7 @@ const onboardingData = [
     title: 'Mark Attendance',
     subtitle: 'Quick and easy attendance tracking',
     description: 'Get smart notifications after each class to mark your attendance as present or absent.',
-    icon: '✅',
+    iconName: 'checkmark-circle',
     bgColor: '#059669',
   },
   {
@@ -43,7 +44,7 @@ const onboardingData = [
     title: 'View Your Stats',
     subtitle: 'Monitor your academic progress',
     description: 'See detailed analytics with subject-wise and overall attendance percentages.',
-    icon: '📊',
+    iconName: 'analytics',
     bgColor: '#dc2626',
   },
 ];
@@ -77,7 +78,7 @@ const OnboardingScreen = ({ navigation }) => {
       <View style={[styles.slide, { backgroundColor: item.bgColor }]}>
         <View style={styles.slideContent}>
           <View style={styles.iconContainer}>
-            <Text style={styles.icon}>{item.icon}</Text>
+            <Ionicons name={item.iconName} size={60} color="#ffffff" />
           </View>
           
           <View style={styles.textContainer}>
@@ -88,7 +89,7 @@ const OnboardingScreen = ({ navigation }) => {
           
           <View style={styles.illustrationContainer}>
             <View style={styles.illustration}>
-              <Text style={styles.illustrationIcon}>{item.icon}</Text>
+              <Ionicons name={item.iconName} size={80} color="#ffffff" />
             </View>
           </View>
         </View>

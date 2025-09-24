@@ -292,7 +292,7 @@ const ClassDetailScreen = ({ navigation, route }) => {
           
           {classData.notes && (
             <View style={styles.classDetail}>
-              <Text style={styles.detailIcon}>📝</Text>
+              <Ionicons name="document-text" size={16} color="#666" />
               <Text style={styles.detailText}>{classData.notes}</Text>
             </View>
           )}
@@ -307,7 +307,7 @@ const ClassDetailScreen = ({ navigation, route }) => {
 
         {/* Attendance Statistics */}
         <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>📊 Attendance Overview</Text>
+          <Text style={styles.sectionTitle}>Attendance Overview</Text>
           
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
@@ -325,15 +325,15 @@ const ClassDetailScreen = ({ navigation, route }) => {
           
           <View style={styles.statusBreakdown}>
             <View style={styles.statusItem}>
-              <Text style={styles.statusIcon}>✅</Text>
+              <Ionicons name="checkmark-circle" size={16} color="#10b981" />
               <Text style={styles.statusCount}>{attendanceStats.present || 0} Present</Text>
             </View>
             <View style={styles.statusItem}>
-              <Text style={styles.statusIcon}>⏰</Text>
+              <Ionicons name="time" size={16} color="#f59e0b" />
               <Text style={styles.statusCount}>{attendanceStats.late || 0} Late</Text>
             </View>
             <View style={styles.statusItem}>
-              <Text style={styles.statusIcon}>❌</Text>
+              <Ionicons name="close-circle" size={16} color="#ef4444" />
               <Text style={styles.statusCount}>{attendanceStats.absent || 0} Absent</Text>
             </View>
             <View style={styles.statusItem}>
@@ -349,12 +349,12 @@ const ClassDetailScreen = ({ navigation, route }) => {
             style={styles.primaryActionButton}
             onPress={() => setShowMarkAttendance(true)}
           >
-            <Text style={styles.primaryActionText}>📝 Mark Attendance</Text>
+            <Text style={styles.primaryActionText}>Mark Attendance</Text>
           </TouchableOpacity>
           
           <View style={styles.secondaryActions}>
             <TouchableOpacity style={styles.secondaryActionButton} onPress={handleEditClass}>
-              <Text style={styles.secondaryActionText}>✏️ Edit Class</Text>
+              <Text style={styles.secondaryActionText}>Edit Class</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -368,7 +368,7 @@ const ClassDetailScreen = ({ navigation, route }) => {
 
         {/* Attendance History */}
         <View style={styles.historyContainer}>
-          <Text style={styles.sectionTitle}>📅 Attendance History</Text>
+          <Text style={styles.sectionTitle}>Attendance History</Text>
           
           {attendanceRecords.length === 0 ? (
             <View style={styles.emptyHistory}>

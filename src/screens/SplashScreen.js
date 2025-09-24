@@ -87,7 +87,7 @@ const SplashScreen = ({ navigation }) => {
         ]}
       >
         <View style={styles.logoCircle}>
-          <Text style={styles.logoText}>📚</Text>
+          <Ionicons name="school" size={60} color="#007AFF" />
         </View>
       </Animated.View>
 

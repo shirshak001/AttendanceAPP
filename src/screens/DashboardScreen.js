@@ -12,10 +12,34 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 
 const DashboardScreen = ({ navigation }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const [overallAttendance, setOverallAttendance] = React.useState(0);
+  const [todaysClasses, setTodaysClasses] = React.useState(0);
+  const [todaySchedule, setTodaySchedule] = React.useState([]);
 
-  const handleLogout = async () => {
-    await logout();
+  React.useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      // Load attendance data from backend
+      const AttendanceService = require('../services/AttendanceService').default || require('../services/AttendanceService');
+      const TimetableService = require('../services/TimetableService').default || require('../services/TimetableService');
+      
+      const attendance = await AttendanceService.getOverallAttendance();
+      setOverallAttendance(Math.round(attendance.percentage || 0));
+      
+      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+      const classes = await TimetableService.getClassesForDay(today);
+      setTodaysClasses(classes.length);
+      setTodaySchedule(classes);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      // Fallback to default values on error
+      setOverallAttendance(0);
+      setTodaysClasses(0);
+    }
   };
 
   return (
@@ -38,11 +62,11 @@ const DashboardScreen = ({ navigation }) => {
 
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>85%</Text>
+            <Text style={styles.statNumber}>{overallAttendance}%</Text>
             <Text style={styles.statLabel}>Overall Attendance</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>5</Text>
+            <Text style={styles.statNumber}>{todaysClasses}</Text>
             <Text style={styles.statLabel}>Today's Classes</Text>
           </View>
         </View>
@@ -96,9 +120,7 @@ const DashboardScreen = ({ navigation }) => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );

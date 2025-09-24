@@ -124,7 +124,7 @@ const AttendanceScreen = ({ navigation }) => {
     
     let statusColor = '#666';
     let statusText = 'Upcoming';
-    let statusIcon = '⏰';
+    let statusIconName = 'time';
     
     if (isOngoing) {
       statusColor = '#4CAF50';
@@ -186,21 +186,30 @@ const AttendanceScreen = ({ navigation }) => {
               style={[styles.attendanceButton, styles.presentButton]}
               onPress={() => handleQuickMark(classItem, AttendanceService.getAttendanceStatusValues().PRESENT)}
             >
-              <Text style={styles.attendanceButtonText}>✅ Present</Text>
+              <View style={styles.buttonContent}>
+                <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
+                <Text style={styles.attendanceButtonText}>Present</Text>
+              </View>
             </TouchableOpacity>
             
             <TouchableOpacity
               style={[styles.attendanceButton, styles.lateButton]}
               onPress={() => handleQuickMark(classItem, AttendanceService.getAttendanceStatusValues().LATE)}
             >
-              <Text style={styles.attendanceButtonText}>⏰ Late</Text>
+              <View style={styles.buttonContent}>
+                <Ionicons name="time" size={20} color="#ffffff" />
+                <Text style={styles.attendanceButtonText}>Late</Text>
+              </View>
             </TouchableOpacity>
             
             <TouchableOpacity
               style={[styles.attendanceButton, styles.absentButton]}
               onPress={() => handleQuickMark(classItem, AttendanceService.getAttendanceStatusValues().ABSENT)}
             >
-              <Text style={styles.attendanceButtonText}>❌ Absent</Text>
+              <View style={styles.buttonContent}>
+                <Ionicons name="close-circle" size={20} color="#ffffff" />
+                <Text style={styles.attendanceButtonText}>Absent</Text>
+              </View>
             </TouchableOpacity>
           </View>
         )}
@@ -210,7 +219,7 @@ const AttendanceScreen = ({ navigation }) => {
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>📅</Text>
+      <Ionicons name="calendar" size={48} color="#a1a1aa" />
       <Text style={styles.emptyTitle}>No Classes Today</Text>
       <Text style={styles.emptyText}>You have no scheduled classes for today.</Text>
       <TouchableOpacity
@@ -236,7 +245,7 @@ const AttendanceScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>📝 Mark Attendance</Text>
+        <Text style={styles.title}>Mark Attendance</Text>
         <Text style={styles.dateText}>
           {new Date().toLocaleDateString('en-US', {
             weekday: 'long',
@@ -251,7 +260,7 @@ const AttendanceScreen = ({ navigation }) => {
       <View style={styles.notificationCard}>
         <View style={styles.notificationHeader}>
           <View style={styles.notificationTitle}>
-            <Text style={styles.notificationIcon}>🔔</Text>
+            <Ionicons name="notifications" size={24} color="#007AFF" />
             <Text style={styles.notificationText}>Attendance Reminders</Text>
           </View>
           <Switch
@@ -293,7 +302,7 @@ const AttendanceScreen = ({ navigation }) => {
                 style={styles.quickActionButton}
                 onPress={() => navigation.navigate('Timetable')}
               >
-                <Text style={styles.quickActionIcon}>📅</Text>
+                <Ionicons name="calendar" size={24} color="#007AFF" />
                 <Text style={styles.quickActionText}>View Full Timetable</Text>
               </TouchableOpacity>
               
@@ -301,7 +310,7 @@ const AttendanceScreen = ({ navigation }) => {
                 style={styles.quickActionButton}
                 onPress={() => navigation.navigate('Subjects')}
               >
-                <Text style={styles.quickActionIcon}>📚</Text>
+                <Ionicons name="school" size={24} color="#007AFF" />
                 <Text style={styles.quickActionText}>Manage Subjects</Text>
               </TouchableOpacity>
               
@@ -515,9 +524,15 @@ const styles = StyleSheet.create({
   absentButton: {
     backgroundColor: '#FFEBEE',
   },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   attendanceButtonText: {
     fontSize: 12,
     fontWeight: '600',
+    marginLeft: 4,
   },
   emptyContainer: {
     alignItems: 'center',

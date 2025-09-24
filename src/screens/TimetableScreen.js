@@ -267,7 +267,7 @@ const TimetableScreen = ({ navigation }) => {
                 
                 {classItem.notes && (
                   <Text style={styles.classCardNotes} numberOfLines={2}>
-                    📝 {classItem.notes}
+                    {classItem.notes}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -304,7 +304,7 @@ const TimetableScreen = ({ navigation }) => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>📅 Timetable</Text>
+          <Text style={styles.title}>Timetable</Text>
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => navigation.navigate('AddEditClass', { onSave: loadTimetable })}

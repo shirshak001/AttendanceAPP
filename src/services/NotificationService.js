@@ -146,7 +146,7 @@ class NotificationService {
 
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: '📚 Attendance Reminder',
+          title: 'Attendance Reminder',
           body: `Don't forget to mark attendance for ${classItem.subjectName}`,
           data: {
             type: 'attendance_reminder',
@@ -213,7 +213,7 @@ class NotificationService {
   static async showCompletionNotification(subjectName, status) {
     try {
       await Notifications.presentNotificationAsync({
-        title: '✅ Attendance Marked',
+        title: 'Attendance Marked',
         body: `Marked as ${status.charAt(0).toUpperCase() + status.slice(1)} for ${subjectName}`,
         data: {
           type: 'attendance_completion',
@@ -250,7 +250,7 @@ class NotificationService {
   static async showImmediateAttendanceReminder(classItem) {
     try {
       await Notifications.presentNotificationAsync({
-        title: '⚠️ Pending Attendance',
+        title: 'Pending Attendance',
         body: `Please mark attendance for ${classItem.subjectName}`,
         data: {
           type: 'pending_attendance',
@@ -277,7 +277,7 @@ class NotificationService {
 
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: '📊 Daily Attendance Check',
+          title: 'Daily Attendance Check',
           body: 'Check if you have any pending attendance to mark',
           data: {
             type: 'daily_check',

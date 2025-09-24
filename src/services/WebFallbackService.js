@@ -19,7 +19,15 @@ class WebFallbackService {
     
     async calculateAttendancePercentage(subjectId) {
       console.log(`Web fallback: Calculating attendance for subject ${subjectId}`);
-      return 85; // Mock percentage
+      // Connect to backend API for real data
+      try {
+        const response = await fetch('/api/attendance/percentage/' + subjectId);
+        const data = await response.json();
+        return data.percentage || 0;
+      } catch (error) {
+        console.warn('Backend unavailable, using fallback:', error);
+        return 0;
+      }
     },
     
     async getOverallAttendance() {

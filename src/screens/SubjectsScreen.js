@@ -150,7 +150,7 @@ const SubjectsScreen = ({ navigation }) => {
         <View style={styles.subjectHeader}>
           <View style={styles.subjectIconContainer}>
             <View style={[styles.subjectIcon, { backgroundColor: subject.color }]}>
-              <Text style={styles.subjectIconText}>{subject.icon}</Text>
+              <Ionicons name={subject.icon || 'book'} size={24} color="#ffffff" />
             </View>
           </View>
           
@@ -173,7 +173,7 @@ const SubjectsScreen = ({ navigation }) => {
               style={styles.actionButton}
               onPress={() => handleEditSubject(subject)}
             >
-              <Text style={styles.actionButtonText}>✏️</Text>
+              <Ionicons name="create" size={16} color="#ffffff" />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, styles.deleteButton]}
@@ -215,7 +215,7 @@ const SubjectsScreen = ({ navigation }) => {
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Text style={styles.emptyStateIcon}>📚</Text>
+      <Ionicons name="school" size={48} color="#a1a1aa" />
       <Text style={styles.emptyStateTitle}>No Subjects Added</Text>
       <Text style={styles.emptyStateText}>
         Add your first subject to start tracking attendance
