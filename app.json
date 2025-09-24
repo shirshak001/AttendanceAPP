@@ -29,7 +29,9 @@
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "com.android.alarm.permission.SET_ALARM",
-        "android.permission.SCHEDULE_EXACT_ALARM"
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_EXACT_ALARM",
+        "android.permission.WAKE_LOCK"
       ]
     },
     "web": {

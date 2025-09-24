@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,12 +12,13 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AuthContext } from '../context/AuthContext';
+import { useUser } from '@clerk/clerk-expo';
+import { SignOutButton } from '../components/auth/SignOutButton';
 import NotificationService from '../services/NotificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileScreen = ({ navigation }) => {
-  const { user, logout } = useContext(AuthContext);
+  const { user } = useUser();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [reminderTime, setReminderTime] = useState('5'); // minutes after class
   const [academicYear, setAcademicYear] = useState('2024-2025');
@@ -147,20 +148,7 @@ const ProfileScreen = ({ navigation }) => {
     );
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: logout,
-        },
-      ]
-    );
-  };
+
 
   const renderSettingRow = (icon, title, subtitle, onPress, rightComponent = null) => (
     <TouchableOpacity style={styles.settingRow} onPress={onPress}>
@@ -201,21 +189,38 @@ const ProfileScreen = ({ navigation }) => {
         {/* Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.profileInfo}>
-            <Image
-              source={{ uri: user?.photoURL || user?.avatar }}
-              style={styles.profileImage}
-            />
+            <View style={styles.profileImageContainer}>
+              {user?.profileImageUrl ? (
+                <Image
+                  source={{ uri: user.profileImageUrl }}
+                  style={styles.profileImage}
+                />
+              ) : (
+                <View style={[styles.profileImage, styles.defaultProfileImage]}>
+                  <Ionicons name="person" size={40} color="#6b7280" />
+                </View>
+              )}
+            </View>
             <View style={styles.profileDetails}>
-              <Text style={styles.profileName}>{user?.name || 'User'}</Text>
-              <Text style={styles.profileEmail}>{user?.email || 'No email'}</Text>
+              <Text style={styles.profileName}>
+                {user?.fullName || user?.firstName || 'User'}
+              </Text>
+              {user?.username && (
+                <Text style={styles.profileUsername}>
+                  @{user.username}
+                </Text>
+              )}
+              <Text style={styles.profileEmail}>
+                {user?.primaryEmailAddress?.emailAddress || 'No email'}
+              </Text>
               <View style={styles.loginMethodBadge}>
                 <Ionicons
-                  name={user?.loginMethod === 'google' ? 'logo-google' : 'person'}
+                  name="shield-checkmark"
                   size={12}
                   color="#fff"
                 />
                 <Text style={styles.loginMethodText}>
-                  {user?.loginMethod || 'local'}
+                  Clerk Auth
                 </Text>
               </View>
             </View>
@@ -322,12 +327,7 @@ const ProfileScreen = ({ navigation }) => {
         </View>
 
         {/* Sign Out */}
-        <View style={styles.signOutSection}>
-          <TouchableOpacity style={styles.signOutButton} onPress={handleLogout}>
-            <Ionicons name="log-out" size={20} color="#FF3B30" />
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
+        <SignOutButton navigation={navigation} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -371,11 +371,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  profileImageContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    overflow: 'hidden',
+  },
   profileImage: {
     width: 64,
     height: 64,
     borderRadius: 32,
     backgroundColor: '#E5E5EA',
+  },
+  defaultProfileImage: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
   },
   profileDetails: {
     marginLeft: 16,
@@ -385,6 +396,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#000',
+    marginBottom: 4,
+  },
+  profileUsername: {
+    fontSize: 15,
+    color: '#007AFF',
+    fontWeight: '500',
     marginBottom: 4,
   },
   profileEmail: {

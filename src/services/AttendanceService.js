@@ -36,6 +36,35 @@ class AttendanceService {
     }
   }
 
+  // Get overall attendance statistics
+  static async getOverallAttendance() {
+    try {
+      const allAttendance = await this.getAllAttendance();
+      let totalClasses = 0;
+      let presentClasses = 0;
+      
+      Object.values(allAttendance).forEach(classAttendance => {
+        classAttendance.forEach(record => {
+          totalClasses++;
+          if (record.status === ATTENDANCE_STATUS.PRESENT || record.status === ATTENDANCE_STATUS.LATE) {
+            presentClasses++;
+          }
+        });
+      });
+      
+      const percentage = totalClasses > 0 ? Math.round((presentClasses / totalClasses) * 100) : 0;
+      
+      return {
+        total: totalClasses,
+        present: presentClasses,
+        percentage: percentage
+      };
+    } catch (error) {
+      console.error('Error getting overall attendance:', error);
+      return { total: 0, present: 0, percentage: 0 };
+    }
+  }
+
   // Mark attendance for a class
   static async markAttendance(classId, subjectId, status, date = null, notes = '') {
     try {

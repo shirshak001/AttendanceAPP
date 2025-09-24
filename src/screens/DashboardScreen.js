@@ -7,18 +7,22 @@ import {
   ScrollView,
   SafeAreaView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../context/AuthContext';
+import { useUser } from '@clerk/clerk-expo';
+import NotificationService from '../services/NotificationService';
 
 const DashboardScreen = ({ navigation }) => {
-  const { user } = useAuth();
+  const { user } = useUser();
   const [overallAttendance, setOverallAttendance] = React.useState(0);
   const [todaysClasses, setTodaysClasses] = React.useState(0);
   const [todaySchedule, setTodaySchedule] = React.useState([]);
+  const [notificationsEnabled, setNotificationsEnabled] = React.useState(false);
 
   React.useEffect(() => {
     loadDashboardData();
+    checkNotificationStatus();
   }, []);
 
   const loadDashboardData = async () => {
@@ -42,13 +46,114 @@ const DashboardScreen = ({ navigation }) => {
     }
   };
 
+  const checkNotificationStatus = async () => {
+    try {
+      const enabled = await NotificationService.areNotificationsEnabled();
+      setNotificationsEnabled(enabled);
+    } catch (error) {
+      console.error('Error checking notification status:', error);
+    }
+  };
+
+  const handleEnableNotifications = async () => {
+    try {
+      const granted = await NotificationService.requestPermissions();
+      if (granted) {
+        await NotificationService.enableAttendanceReminders();
+        setNotificationsEnabled(true);
+        Alert.alert(
+          'Notifications Enabled',
+          'You will now receive attendance reminders for your classes!',
+          [{ text: 'Great!' }]
+        );
+      } else {
+        Alert.alert(
+          'Permission Denied',
+          'Please enable notifications in your device settings to receive attendance reminders.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Error enabling notifications:', error);
+      Alert.alert('Error', 'Failed to enable notifications. Please try again.');
+    }
+  };
+
+  const handleTestNotification = async () => {
+    try {
+      const success = await NotificationService.sendTestNotification();
+      if (success) {
+        Alert.alert('Success', 'Test notification sent!');
+      } else {
+        Alert.alert('Error', 'Failed to send test notification. Check console for details.');
+      }
+    } catch (error) {
+      console.error('Error testing notification:', error);
+      Alert.alert('Error', 'Failed to send test notification.');
+    }
+  };
+
+  const handleTestReminder = async () => {
+    try {
+      const success = await NotificationService.scheduleTestReminder();
+      if (success) {
+        Alert.alert('Success', 'Test reminder scheduled! You should receive it in 5 seconds.');
+      } else {
+        Alert.alert('Error', 'Failed to schedule test reminder. Check console for details.');
+      }
+    } catch (error) {
+      console.error('Error testing reminder:', error);
+      Alert.alert('Error', 'Failed to schedule test reminder.');
+    }
+  };
+
+  const handleCheckScheduled = async () => {
+    try {
+      const notifications = await NotificationService.getAllScheduledNotifications();
+      const count = notifications.length;
+      
+      Alert.alert(
+        'Scheduled Notifications', 
+        `Found ${count} scheduled notifications. Check console for details.`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error checking scheduled notifications:', error);
+      Alert.alert('Error', 'Failed to check scheduled notifications.');
+    }
+  };
+
+  const handleRescheduleAll = async () => {
+    try {
+      Alert.alert(
+        'Reschedule All',
+        'This will reschedule all attendance reminders for the week. Continue?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Yes', 
+            onPress: async () => {
+              await NotificationService.scheduleAttendanceReminders();
+              Alert.alert('Success', 'All attendance reminders have been rescheduled for the week!');
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error rescheduling notifications:', error);
+      Alert.alert('Error', 'Failed to reschedule notifications.');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
       <View style={styles.topHeader}>
         <View style={styles.headerLeft}>
           <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.userName}>{user?.name || 'Student'}!</Text>
+          <Text style={styles.userName}>
+            {user?.username || user?.firstName || user?.fullName || user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 'Student'}!
+          </Text>
         </View>
         <TouchableOpacity 
           style={styles.profileButton}
@@ -70,6 +175,26 @@ const DashboardScreen = ({ navigation }) => {
             <Text style={styles.statLabel}>Today's Classes</Text>
           </View>
         </View>
+
+        {!notificationsEnabled && (
+          <View style={styles.notificationPrompt}>
+            <View style={styles.notificationContent}>
+              <Ionicons name="notifications" size={24} color="#FF9500" />
+              <View style={styles.notificationText}>
+                <Text style={styles.notificationTitle}>Enable Notifications</Text>
+                <Text style={styles.notificationSubtitle}>
+                  Get reminders for your classes and never miss attendance
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity 
+              style={styles.enableButton} 
+              onPress={handleEnableNotifications}
+            >
+              <Text style={styles.enableButtonText}>Enable</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.todaySection}>
           <Text style={styles.sectionTitle}>Today's Schedule</Text>
@@ -116,6 +241,43 @@ const DashboardScreen = ({ navigation }) => {
             >
               <Ionicons name="document-text" size={24} color="#007AFF" />
               <Text style={styles.actionButtonText}>View History</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.testSection}>
+          <Text style={styles.sectionTitle}>Notification Test</Text>
+          <View style={styles.actionGrid}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.testButton]} 
+              onPress={handleTestNotification}
+            >
+              <Ionicons name="notifications" size={24} color="#FF9500" />
+              <Text style={styles.actionButtonText}>Test Instant</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.testButton]}
+              onPress={handleTestReminder}
+            >
+              <Ionicons name="alarm" size={24} color="#FF9500" />
+              <Text style={styles.actionButtonText}>Test 5s Delay</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.testButton]}
+              onPress={handleCheckScheduled}
+            >
+              <Ionicons name="list" size={24} color="#FF9500" />
+              <Text style={styles.actionButtonText}>Check Scheduled</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.testButton]}
+              onPress={handleRescheduleAll}
+            >
+              <Ionicons name="refresh" size={24} color="#FF9500" />
+              <Text style={styles.actionButtonText}>Reschedule All</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -215,6 +377,9 @@ const styles = StyleSheet.create({
   quickActions: {
     marginBottom: 30,
   },
+  testSection: {
+    marginBottom: 30,
+  },
   actionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -229,6 +394,11 @@ const styles = StyleSheet.create({
     width: '47%',
     minHeight: 80,
     justifyContent: 'center',
+  },
+  testButton: {
+    backgroundColor: '#2d1b69',
+    borderWidth: 1,
+    borderColor: '#FF9500',
   },
   actionButtonText: {
     fontSize: 14,
@@ -247,6 +417,46 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     color: '#ffffff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  notificationPrompt: {
+    backgroundColor: '#252545',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  notificationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  notificationText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  notificationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 4,
+  },
+  notificationSubtitle: {
+    fontSize: 14,
+    color: '#a1a1aa',
+    lineHeight: 18,
+  },
+  enableButton: {
+    backgroundColor: '#FF9500',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  enableButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
     fontWeight: '600',
   },
 });

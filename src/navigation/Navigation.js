@@ -1,11 +1,16 @@
-import React from 'react';
+﻿import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { AuthProvider, useAuth } from '../context/AuthContext';
+import { useAuth } from '@clerk/clerk-expo';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
-// Screens
+// Auth Screens
+import SignInScreen from '../components/auth/SignInScreen';
+import SignUpScreen from '../components/auth/SignUpScreen';
+
+// App Screens
+import TestAuthScreen from '../screens/TestAuthScreen';
 import SplashScreen from '../screens/SplashScreen';
-import AuthScreen from '../screens/AuthScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import SubjectsScreen from '../screens/SubjectsScreen';
@@ -21,17 +26,32 @@ import ProfileScreen from '../screens/ProfileScreen';
 
 const Stack = createStackNavigator();
 
-const AppNavigator = () => {
+const AuthStack = () => {
   return (
     <Stack.Navigator
-      initialRouteName="Splash"
+      initialRouteName="SignIn"
       screenOptions={{
         headerShown: false,
         gestureEnabled: false,
       }}
     >
+      <Stack.Screen name="SignIn" component={SignInScreen} />
+      <Stack.Screen name="SignUp" component={SignUpScreen} />
+    </Stack.Navigator>
+  );
+};
+
+const AppStack = () => {
+  return (
+    <Stack.Navigator
+      initialRouteName="TestAuth"
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: false,
+      }}
+    >
+      <Stack.Screen name="TestAuth" component={TestAuthScreen} />
       <Stack.Screen name="Splash" component={SplashScreen} />
-      <Stack.Screen name="Auth" component={AuthScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
       <Stack.Screen name="Subjects" component={SubjectsScreen} />
@@ -49,13 +69,30 @@ const AppNavigator = () => {
 };
 
 const Navigation = () => {
+  const { isLoaded, isSignedIn } = useAuth();
+
+  if (!isLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4f46e5" />
+      </View>
+    );
+  }
+
   return (
-    <AuthProvider>
-      <NavigationContainer>
-        <AppNavigator />
-      </NavigationContainer>
-    </AuthProvider>
+    <NavigationContainer>
+      {isSignedIn ? <AppStack /> : <AuthStack />}
+    </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+  },
+});
 
 export default Navigation;

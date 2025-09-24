@@ -12,6 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import SubjectService, { SUBJECT_COLORS, SUBJECT_ICONS } from '../services/SubjectService';
 
 const { width } = Dimensions.get('window');

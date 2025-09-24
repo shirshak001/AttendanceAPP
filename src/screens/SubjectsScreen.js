@@ -11,20 +11,49 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import SubjectService from '../services/SubjectService';
 
 const { width } = Dimensions.get('window');
 
 const SubjectsScreen = ({ navigation }) => {
   const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
     totalSubjects: 0,
     overallPercentage: 0,
     subjectsAboveTarget: 0,
-    subjectsBelowTarget: 0,
+    subjectsBelowTarget: 0
   });
+
+  // Helper method to get valid Ionicon name
+  const getValidIconName = (icon) => {
+    // If it's already a valid Ionicon name, return it
+    if (icon && typeof icon === 'string' && !icon.includes('📚') && !icon.includes('🔬')) {
+      return icon;
+    }
+    // Map old emojis to Ionicon names
+    const iconMap = {
+      '📚': 'book',
+      '🔬': 'flask',
+      '🧮': 'calculator',
+      '🎨': 'color-palette',
+      '🏃‍♂️': 'fitness',
+      '💻': 'laptop',
+      '🌍': 'earth',
+      '📖': 'library',
+      '⚗️': 'beaker',
+      '🎵': 'musical-notes',
+      '🏛️': 'library-outline',
+      '📊': 'bar-chart',
+      '🔭': 'telescope',
+      '🧪': 'test-tube',
+      '📐': 'triangle',
+      '🎭': 'theater'
+    };
+    return iconMap[icon] || 'book';
+  };
 
   const loadSubjects = async () => {
     try {
@@ -39,7 +68,7 @@ const SubjectsScreen = ({ navigation }) => {
       console.error('Error loading subjects:', error);
       Alert.alert('Error', 'Failed to load subjects');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
       setRefreshing(false);
     }
   };
@@ -150,7 +179,7 @@ const SubjectsScreen = ({ navigation }) => {
         <View style={styles.subjectHeader}>
           <View style={styles.subjectIconContainer}>
             <View style={[styles.subjectIcon, { backgroundColor: subject.color }]}>
-              <Ionicons name={subject.icon || 'book'} size={24} color="#ffffff" />
+              <Ionicons name={getValidIconName(subject.icon)} size={24} color="#ffffff" />
             </View>
           </View>
           
@@ -226,7 +255,7 @@ const SubjectsScreen = ({ navigation }) => {
     </View>
   );
 
-  if (loading) {
+  if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>

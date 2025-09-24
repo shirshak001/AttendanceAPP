@@ -1,41 +1,62 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { ClerkProvider } from '@clerk/clerk-expo';
+import * as SecureStore from 'expo-secure-store';
 import Navigation from './src/navigation/Navigation';
+import NotificationService from './src/services/NotificationService';
 import 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+// Token cache for Clerk
+const tokenCache = {
+  async getToken(key) {
+    try {
+      return SecureStore.getItemAsync(key);
+    } catch (err) {
+      return null;
+    }
+  },
+  async saveToken(key, value) {
+    try {
+      return SecureStore.setItemAsync(key, value);
+    } catch (err) {
+      return;
+    }
+  },
+};
+
+// Get the Clerk publishable key from environment
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_c291Z2h0LWh1c2t5LTYyLmNsZXJrLmFjY291bnRzLmRldiQ';
+
+console.log('Clerk publishable key loaded:', publishableKey ? 'Yes' : 'No');
+console.log('Using key:', publishableKey?.substring(0, 20) + '...');
+
+if (!publishableKey) {
+  throw new Error('Missing Publishable Key. Please set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env');
+}
+
 const App = () => {
   useEffect(() => {
-    // Initialize services in a completely safe way
-    const initializeServices = () => {
+    const initializeApp = async () => {
       try {
-        // Simple initialization that won't cause module errors
-        console.log('AttendanceApp starting...');
-        
-        // Don't import any services that might cause issues
-        // Just log that the app is ready
-        setTimeout(() => {
-          console.log('AttendanceApp ready - all features available');
-        }, 1000);
+        console.log('Initializing notification service...');
+        await NotificationService.initialize();
+        console.log('Notification service initialized successfully');
       } catch (error) {
-        console.log('Initialization skipped:', error.message);
+        console.error('Error initializing notification service:', error);
       }
     };
     
-    // Safe initialization
-    initializeServices();
-    
-    // Simple cleanup
-    return () => {
-      console.log('App cleanup');
-    };
+    initializeApp();
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <Navigation />
-      <StatusBar style="auto" />
-    </SafeAreaProvider>
+    <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
+      <SafeAreaProvider>
+        <Navigation />
+        <StatusBar style="auto" />
+      </SafeAreaProvider>
+    </ClerkProvider>
   );
 };
 

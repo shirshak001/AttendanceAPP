@@ -12,12 +12,25 @@ import {
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import TimetableService from '../services/TimetableService';
 import SubjectService from '../services/SubjectService';
 
 const AddEditClassScreen = ({ navigation, route }) => {
   const { classId, day, suggestedStartTime, onSave } = route.params || {};
   const isEditing = !!classId;
+
+  // Helper function to get valid Ionicon name
+  const getValidIconName = (icon) => {
+    const iconMap = {
+      '📚': 'book', '🔬': 'flask', '🧮': 'calculator', '🎨': 'color-palette',
+      '🏃‍♂️': 'fitness', '💻': 'laptop', '🌍': 'earth', '📖': 'library',
+      '⚗️': 'beaker', '🎵': 'musical-notes', '🏛️': 'library-outline',
+      '📊': 'bar-chart', '🔭': 'telescope', '🧪': 'test-tube',
+      '📐': 'triangle', '🎭': 'theater'
+    };
+    return iconMap[icon] || icon || 'book';
+  };
 
   const [formData, setFormData] = useState({
     subjectId: '',
@@ -321,7 +334,7 @@ const AddEditClassScreen = ({ navigation, route }) => {
           >
             {selectedSubject ? (
               <View style={styles.selectedSubject}>
-                <Text style={styles.selectedSubjectIcon}>{selectedSubject.icon}</Text>
+                <Ionicons name={getValidIconName(selectedSubject.icon)} size={20} color="#007AFF" />
                 <Text style={styles.selectedSubjectText}>{selectedSubject.name}</Text>
               </View>
             ) : (
@@ -424,7 +437,7 @@ const AddEditClassScreen = ({ navigation, route }) => {
             <View style={[styles.previewCard, { borderLeftColor: selectedSubject.color }]}>
               <View style={styles.previewHeader}>
                 <Text style={styles.previewSubject}>
-                  {selectedSubject.icon} {selectedSubject.name}
+                  <Ionicons name={getValidIconName(selectedSubject.icon)} size={16} color="#007AFF" /> {selectedSubject.name}
                 </Text>
                 <Text style={styles.previewTime}>
                   {TimetableService.formatTimeRange(formData.startTime, formData.endTime)}

@@ -57,6 +57,45 @@ class NotificationService {
       return false;
     }
   }
+
+  // Request notification permissions
+  static async requestPermissions() {
+    try {
+      if (!Notifications || !Notifications.requestPermissionsAsync) {
+        console.log('Notifications not available for permission request');
+        return false;
+      }
+
+      console.log('Requesting notification permissions...');
+      const { status } = await Notifications.requestPermissionsAsync();
+      console.log('Permission request result:', status);
+      
+      return status === 'granted';
+    } catch (error) {
+      console.error('Error requesting notification permissions:', error);
+      return false;
+    }
+  }
+
+  // Enable attendance reminders (after permissions are granted)
+  static async enableAttendanceReminders() {
+    try {
+      console.log('Enabling attendance reminders...');
+      
+      // Set notifications as enabled in storage
+      await this.setNotificationsEnabled(true);
+      
+      // Schedule the actual reminders
+      await this.scheduleAttendanceReminders();
+      await this.scheduleDailyReminders();
+      
+      console.log('Attendance reminders enabled successfully');
+      return true;
+    } catch (error) {
+      console.error('Error enabling attendance reminders:', error);
+      return false;
+    }
+  }
   // Initialize notification service for development builds
   static async initialize() {
     try {
@@ -65,16 +104,40 @@ class NotificationService {
         return false;
       }
       
-      // Request permissions
-      const { status } = await Notifications.requestPermissionsAsync();
-      
-      if (status !== 'granted') {
-        console.log('Notification permissions not granted');
-        return false;
+      console.log('Starting notification service initialization...');
+
+      // Set up notification channel for Android
+      if (Platform.OS === 'android') {
+        console.log('Setting up Android notification channel...');
+        await Notifications.setNotificationChannelAsync('attendance-reminder', {
+          name: 'Attendance Reminders',
+          importance: Notifications.AndroidImportance.HIGH,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#FF231F7C',
+          sound: true,
+          enableVibrate: true,
+          showBadge: true,
+        });
+
+        // Set up a default notification channel as well
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'Default',
+          importance: Notifications.AndroidImportance.HIGH,
+          vibrationPattern: [0, 250, 250, 250],
+          sound: true,
+          enableVibrate: true,
+        });
+        console.log('Android notification channels created successfully');
       }
+      
+      // Don't automatically request permissions during initialization
+      // Check current permission status instead
+      const { status } = await Notifications.getPermissionsAsync();
+      console.log('Current notification permission status:', status);
 
       // Set up notification categories for quick actions (not supported on web)
       if (Platform.OS !== 'web') {
+        console.log('Setting up notification categories...');
         await Notifications.setNotificationCategoryAsync('attendance-reminder', [
           {
             identifier: 'mark-present',
@@ -92,6 +155,14 @@ class NotificationService {
             options: { opensAppToForeground: true },
           },
         ]);
+        console.log('Notification categories set up successfully');
+        
+        // Set up notification response listener
+        if (Notifications.addNotificationResponseReceivedListener) {
+          Notifications.addNotificationResponseReceivedListener(this.handleNotificationResponse);
+          console.log('Notification response listener set up');
+        }
+        
         console.log('Notification service initialized with full push notification support');
       } else {
         console.log('Notification service initialized for web (limited functionality)');
@@ -104,26 +175,104 @@ class NotificationService {
     }
   }
 
-  // Schedule attendance reminders for all classes
+  // Schedule attendance reminders for all classes (works when app is closed)
   static async scheduleAttendanceReminders() {
     try {
-      // Cancel all existing notifications first
-      await Notifications.cancelAllScheduledNotificationsAsync();
+      console.log('Scheduling attendance reminders for background notifications...');
       
+      // Clean up expired notifications first
+      await this.cleanupExpiredNotifications();
+      
+      // Cancel existing attendance reminders (keep other notifications)
+      const existingNotifications = await Notifications.getAllScheduledNotificationsAsync();
+      for (const notification of existingNotifications) {
+        if (notification.identifier?.startsWith('attendance_')) {
+          await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+        }
+      }
+      
+      // Get today's classes that need attendance reminders
       const todayClasses = await AttendanceService.getTodayClassesWithAttendance();
       const reminders = todayClasses.filter(classItem => !classItem.hasAttendance);
       
+      // Schedule reminders for today
       for (const classItem of reminders) {
         await NotificationService.scheduleClassReminder(classItem);
       }
 
-      console.log(`Scheduled reminders for ${reminders.length} classes`);
+      // Also schedule reminders for the next 6 days
+      for (let dayOffset = 1; dayOffset <= 6; dayOffset++) {
+        try {
+          const futureDate = new Date();
+          futureDate.setDate(futureDate.getDate() + dayOffset);
+          const futureDayName = futureDate.toLocaleDateString('en-US', { weekday: 'long' });
+          
+          // Get timetable for future day
+          const futureClasses = await TimetableService.getClassesForDay(futureDayName);
+          
+          for (const classItem of futureClasses) {
+            // Create a modified class item for the future date
+            const futureClassItem = {
+              ...classItem,
+              date: futureDate.toISOString().split('T')[0],
+              id: `${classItem.id}_${futureDate.toISOString().split('T')[0]}`
+            };
+            
+            // Schedule for future date
+            const classDateTime = new Date(futureDate);
+            const [hours, minutes] = classItem.endTime.split(':');
+            classDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            
+            // Only schedule if it's in the future
+            if (classDateTime > new Date()) {
+              const reminderTime = new Date(classDateTime.getTime() + 5 * 60 * 1000);
+              
+              const trigger = {
+                date: reminderTime,
+                channelId: 'attendance-reminder',
+              };
+
+              const notificationId = `attendance_${futureClassItem.subjectId}_${futureClassItem.id}_${reminderTime.getTime()}`;
+
+              await Notifications.scheduleNotificationAsync({
+                identifier: notificationId,
+                content: {
+                  title: 'Attendance Reminder',
+                  body: `Don't forget to mark attendance for ${classItem.subjectName}`,
+                  data: {
+                    type: 'attendance_reminder',
+                    classId: futureClassItem.id,
+                    subjectId: classItem.subjectId,
+                    subjectName: classItem.subjectName,
+                    scheduledFor: reminderTime.toISOString(),
+                    date: futureClassItem.date,
+                  },
+                  categoryIdentifier: 'attendance-reminder',
+                  sound: true,
+                  badge: 1,
+                  priority: Notifications.AndroidNotificationPriority.HIGH,
+                },
+                trigger,
+              });
+              
+              console.log(`Scheduled future reminder for ${classItem.subjectName} on ${futureDayName} at ${reminderTime.toLocaleString()}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Error scheduling reminders for day offset ${dayOffset}:`, error);
+        }
+      }
+
+      // Schedule daily attendance checks
+      await this.scheduleDailyAttendanceCheck();
+
+      console.log(`Scheduled reminders for ${reminders.length} classes today + future classes for the week`);
     } catch (error) {
       console.error('Error scheduling attendance reminders:', error);
     }
   }
 
-  // Schedule reminder for a specific class
+  // Schedule reminder for a specific class (works when app is closed)
   static async scheduleClassReminder(classItem) {
     try {
       const now = new Date();
@@ -140,11 +289,16 @@ class NotificationService {
         return;
       }
 
+      // Use exact time trigger for background notifications
       const trigger = {
         date: reminderTime,
+        channelId: 'attendance-reminder',
       };
 
+      const notificationId = `attendance_${classItem.subjectId}_${classItem.id}_${reminderTime.getTime()}`;
+
       await Notifications.scheduleNotificationAsync({
+        identifier: notificationId,
         content: {
           title: 'Attendance Reminder',
           body: `Don't forget to mark attendance for ${classItem.subjectName}`,
@@ -153,13 +307,25 @@ class NotificationService {
             classId: classItem.id,
             subjectId: classItem.subjectId,
             subjectName: classItem.subjectName,
+            scheduledFor: reminderTime.toISOString(),
           },
           categoryIdentifier: 'attendance-reminder',
+          sound: true,
+          badge: 1,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
         },
         trigger,
       });
 
-      console.log(`Scheduled reminder for ${classItem.subjectName} at ${reminderTime.toLocaleTimeString()}`);
+      console.log(`Scheduled reminder for ${classItem.subjectName} at ${reminderTime.toLocaleTimeString()} (ID: ${notificationId})`);
+      
+      // Store scheduled notification for tracking
+      await this.storeScheduledNotification(notificationId, {
+        classItem,
+        reminderTime: reminderTime.toISOString(),
+        type: 'attendance_reminder'
+      });
+      
     } catch (error) {
       console.error(`Error scheduling reminder for ${classItem.subjectName}:`, error);
     }
@@ -265,27 +431,11 @@ class NotificationService {
     }
   }
 
-  // Schedule daily reminders
+  // Schedule daily reminders (legacy method - now uses scheduleDailyAttendanceCheck)
   static async scheduleDailyReminders() {
     try {
-      // Schedule a daily check at 9 PM
-      const trigger = {
-        hour: 21,
-        minute: 0,
-        repeats: true,
-      };
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Daily Attendance Check',
-          body: 'Check if you have any pending attendance to mark',
-          data: {
-            type: 'daily_check',
-          },
-        },
-        trigger,
-      });
-
+      console.log('Setting up daily reminders...');
+      await this.scheduleDailyAttendanceCheck();
       console.log('Daily reminders scheduled');
     } catch (error) {
       console.error('Error scheduling daily reminders:', error);
@@ -351,6 +501,173 @@ class NotificationService {
       await this.checkPendingAttendance();
     } catch (error) {
       console.error('Error checking fallback reminders:', error);
+    }
+  }
+
+  // Test notification (for debugging purposes)
+  static async sendTestNotification() {
+    try {
+      console.log('Sending test notification...');
+      await Notifications.presentNotificationAsync({
+        title: 'Test Notification',
+        body: 'This is a test to verify notifications are working',
+        data: {
+          type: 'test',
+        },
+      });
+      console.log('Test notification sent successfully');
+      return true;
+    } catch (error) {
+      console.error('Error sending test notification:', error);
+      return false;
+    }
+  }
+
+  // Schedule a test reminder in 5 seconds (for debugging)
+  static async scheduleTestReminder() {
+    try {
+      console.log('Scheduling test reminder...');
+      const trigger = {
+        seconds: 5,
+        channelId: 'default',
+      };
+
+      await Notifications.scheduleNotificationAsync({
+        identifier: `test_${Date.now()}`,
+        content: {
+          title: 'Test Reminder',
+          body: 'This test reminder should appear in 5 seconds',
+          data: {
+            type: 'test_reminder',
+          },
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+        },
+        trigger,
+      });
+
+      console.log('Test reminder scheduled successfully');
+      return true;
+    } catch (error) {
+      console.error('Error scheduling test reminder:', error);
+      return false;
+    }
+  }
+
+  // Debug: Get all scheduled notifications
+  static async getAllScheduledNotifications() {
+    try {
+      const notifications = await Notifications.getAllScheduledNotificationsAsync();
+      console.log('All scheduled notifications:');
+      notifications.forEach((notification, index) => {
+        console.log(`${index + 1}. ID: ${notification.identifier}`);
+        console.log(`   Title: ${notification.content.title}`);
+        console.log(`   Trigger: ${JSON.stringify(notification.trigger)}`);
+        console.log(`   Data: ${JSON.stringify(notification.content.data)}`);
+      });
+      return notifications;
+    } catch (error) {
+      console.error('Error getting scheduled notifications:', error);
+      return [];
+    }
+  }
+
+  // Store scheduled notification for tracking
+  static async storeScheduledNotification(notificationId, data) {
+    try {
+      const key = `scheduled_notification_${notificationId}`;
+      await AsyncStorage.setItem(key, JSON.stringify({
+        ...data,
+        scheduledAt: new Date().toISOString(),
+        id: notificationId
+      }));
+    } catch (error) {
+      console.error('Error storing scheduled notification:', error);
+    }
+  }
+
+  // Get all scheduled notifications
+  static async getScheduledNotifications() {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const scheduledKeys = keys.filter(key => key.startsWith('scheduled_notification_'));
+      const notifications = [];
+      
+      for (const key of scheduledKeys) {
+        const data = await AsyncStorage.getItem(key);
+        if (data) {
+          notifications.push(JSON.parse(data));
+        }
+      }
+      
+      return notifications;
+    } catch (error) {
+      console.error('Error getting scheduled notifications:', error);
+      return [];
+    }
+  }
+
+  // Clean up expired scheduled notifications
+  static async cleanupExpiredNotifications() {
+    try {
+      const scheduled = await this.getScheduledNotifications();
+      const now = new Date();
+      
+      for (const notification of scheduled) {
+        const reminderTime = new Date(notification.reminderTime);
+        if (reminderTime <= now) {
+          // Remove expired notification from storage
+          await AsyncStorage.removeItem(`scheduled_notification_${notification.id}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error cleaning up expired notifications:', error);
+    }
+  }
+
+  // Schedule daily attendance check (works in background)
+  static async scheduleDailyAttendanceCheck() {
+    try {
+      // Cancel existing daily checks first
+      const existingNotifications = await Notifications.getAllScheduledNotificationsAsync();
+      for (const notification of existingNotifications) {
+        if (notification.identifier?.startsWith('daily_check_')) {
+          await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+        }
+      }
+
+      // Schedule daily check for the next 7 days
+      for (let i = 0; i < 7; i++) {
+        const checkDate = new Date();
+        checkDate.setDate(checkDate.getDate() + i);
+        checkDate.setHours(21, 0, 0, 0); // 9 PM daily
+
+        if (checkDate > new Date()) { // Only schedule future dates
+          const trigger = {
+            date: checkDate,
+            channelId: 'default',
+          };
+
+          await Notifications.scheduleNotificationAsync({
+            identifier: `daily_check_${checkDate.toISOString().split('T')[0]}`,
+            content: {
+              title: 'Daily Attendance Check',
+              body: 'Check if you have any pending attendance to mark today',
+              data: {
+                type: 'daily_check',
+                date: checkDate.toISOString().split('T')[0],
+              },
+              sound: true,
+              priority: Notifications.AndroidNotificationPriority.DEFAULT,
+            },
+            trigger,
+          });
+        }
+      }
+
+      console.log('Daily attendance checks scheduled for next 7 days');
+    } catch (error) {
+      console.error('Error scheduling daily attendance checks:', error);
     }
   }
 }
