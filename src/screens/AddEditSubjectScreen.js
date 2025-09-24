@@ -18,7 +18,9 @@ import SubjectService, { SUBJECT_COLORS, SUBJECT_ICONS } from '../services/Subje
 const { width } = Dimensions.get('window');
 
 const AddEditSubjectScreen = ({ navigation, route }) => {
-  const { mode, subject } = route.params;
+  // Safely access route params to prevent 'mode' undefined error
+  const params = route?.params || {};
+  const { mode, subject } = params;
   const isEditing = mode === 'edit';
 
   const [formData, setFormData] = useState({
@@ -157,7 +159,11 @@ const AddEditSubjectScreen = ({ navigation, route }) => {
             ]}
             onPress={() => handleInputChange('icon', iconOption)}
           >
-            <Text style={styles.iconText}>{iconOption}</Text>
+            <Ionicons 
+              name={iconOption} 
+              size={24} 
+              color={formData.icon === iconOption ? '#ffffff' : '#666666'} 
+            />
           </TouchableOpacity>
         ))}
       </View>
@@ -221,7 +227,7 @@ const AddEditSubjectScreen = ({ navigation, route }) => {
             <View style={styles.previewCard}>
               <View style={styles.previewHeader}>
                 <View style={[styles.previewIcon, { backgroundColor: formData.color }]}>
-                  <Text style={styles.previewIconText}>{formData.icon}</Text>
+                  <Ionicons name={formData.icon} size={24} color="#ffffff" />
                 </View>
                 <View style={styles.previewInfo}>
                   <Text style={styles.previewName}>
@@ -340,9 +346,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  previewIconText: {
-    fontSize: 24,
-  },
+
   previewInfo: {
     flex: 1,
   },
@@ -449,10 +453,7 @@ const styles = StyleSheet.create({
   selectedIconOption: {
     borderColor: '#4f46e5',
     borderWidth: 2,
-    backgroundColor: '#f0f9ff',
-  },
-  iconText: {
-    fontSize: 24,
+    backgroundColor: '#4f46e5',
   },
   infoBox: {
     backgroundColor: '#f0f9ff',

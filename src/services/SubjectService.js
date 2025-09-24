@@ -15,10 +15,45 @@ export const SUBJECT_COLORS = [
   { id: 'slate', color: '#64748b', name: 'Slate' },
 ];
 
-// Subject icons (Ionicon names)
+// Subject icons (Ionicon names) - Better organized and comprehensive
 export const SUBJECT_ICONS = [
-  'book', 'flask', 'calculator', 'color-palette', 'fitness', 'laptop', 'earth', 'library', 
-  'beaker', 'musical-notes', 'library-outline', 'bar-chart', 'telescope', 'test-tube', 'triangle', 'theater'
+  // Academic subjects
+  'book-outline',           // General/Literature
+  'calculator-outline',     // Mathematics
+  'flask-outline',          // Chemistry/Science
+  'planet-outline',         // Geography/Earth Science
+  'language-outline',       // Languages
+  'library-outline',        // History/Research
+  
+  // STEM subjects
+  'code-slash-outline',     // Computer Science
+  'hardware-chip-outline',  // Engineering/Electronics
+  'telescope-outline',      // Astronomy/Physics
+  'analytics-outline',      // Statistics/Data
+  'construct-outline',      // Engineering/Tech
+  'bulb-outline',          // Physics/Ideas
+  
+  // Arts & Creative
+  'color-palette-outline',  // Art/Design
+  'musical-notes-outline',  // Music
+  'camera-outline',         // Photography
+  'brush-outline',          // Fine Arts
+  'image-outline',          // Visual Arts
+  'mic-outline',           // Speech/Drama
+  
+  // Health & Physical
+  'fitness-outline',        // Physical Education
+  'heart-outline',          // Health/Biology
+  'body-outline',          // Human Anatomy
+  'leaf-outline',          // Biology/Nature
+  
+  // Business & Social
+  'business-outline',       // Business Studies
+  'bar-chart-outline',      // Economics
+  'people-outline',         // Social Studies
+  'globe-outline',          // Global Studies
+  'briefcase-outline',      // Professional Studies
+  'trending-up-outline',    // Finance/Economics
 ];
 
 class SubjectService {
