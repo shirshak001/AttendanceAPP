@@ -31,18 +31,44 @@ const DashboardScreen = ({ navigation }) => {
       const AttendanceService = require('../services/AttendanceService').default || require('../services/AttendanceService');
       const TimetableService = require('../services/TimetableService').default || require('../services/TimetableService');
       
-      const attendance = await AttendanceService.getOverallAttendance();
-      setOverallAttendance(Math.round(attendance.percentage || 0));
+      console.log('Loading dashboard data...');
       
-      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-      const classes = await TimetableService.getClassesForDay(today);
-      setTodaysClasses(classes.length);
-      setTodaySchedule(classes);
+      // Get attendance data with error handling
+      try {
+        const attendance = await AttendanceService.getOverallAttendance();
+        setOverallAttendance(Math.round(attendance.percentage || 0));
+      } catch (attendanceError) {
+        console.error('Error loading attendance:', attendanceError);
+        setOverallAttendance(0);
+      }
+      
+      // Get today's classes with enhanced error handling
+      try {
+        const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+        console.log('Today is:', today);
+        
+        const classes = await TimetableService.getClassesForDay(today);
+        console.log('Classes found for today:', classes);
+        
+        // Ensure classes is an array and has proper structure
+        const validClasses = Array.isArray(classes) ? classes.filter(c => c && c.subjectName) : [];
+        
+        setTodaysClasses(validClasses.length);
+        setTodaySchedule(validClasses);
+        
+        console.log('Dashboard updated with', validClasses.length, 'classes');
+      } catch (timetableError) {
+        console.error('Error loading timetable:', timetableError);
+        setTodaysClasses(0);
+        setTodaySchedule([]);
+      }
+      
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       // Fallback to default values on error
       setOverallAttendance(0);
       setTodaysClasses(0);
+      setTodaySchedule([]);
     }
   };
 
@@ -79,71 +105,7 @@ const DashboardScreen = ({ navigation }) => {
     }
   };
 
-  const handleTestNotification = async () => {
-    try {
-      const success = await NotificationService.sendTestNotification();
-      if (success) {
-        Alert.alert('Success', 'Test notification sent!');
-      } else {
-        Alert.alert('Error', 'Failed to send test notification. Check console for details.');
-      }
-    } catch (error) {
-      console.error('Error testing notification:', error);
-      Alert.alert('Error', 'Failed to send test notification.');
-    }
-  };
 
-  const handleTestReminder = async () => {
-    try {
-      const success = await NotificationService.scheduleTestReminder();
-      if (success) {
-        Alert.alert('Success', 'Test reminder scheduled! You should receive it in 5 seconds.');
-      } else {
-        Alert.alert('Error', 'Failed to schedule test reminder. Check console for details.');
-      }
-    } catch (error) {
-      console.error('Error testing reminder:', error);
-      Alert.alert('Error', 'Failed to schedule test reminder.');
-    }
-  };
-
-  const handleCheckScheduled = async () => {
-    try {
-      const notifications = await NotificationService.getAllScheduledNotifications();
-      const count = notifications.length;
-      
-      Alert.alert(
-        'Scheduled Notifications', 
-        `Found ${count} scheduled notifications. Check console for details.`,
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      console.error('Error checking scheduled notifications:', error);
-      Alert.alert('Error', 'Failed to check scheduled notifications.');
-    }
-  };
-
-  const handleRescheduleAll = async () => {
-    try {
-      Alert.alert(
-        'Reschedule All',
-        'This will reschedule all attendance reminders for the week. Continue?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Yes', 
-            onPress: async () => {
-              await NotificationService.scheduleAttendanceReminders();
-              Alert.alert('Success', 'All attendance reminders have been rescheduled for the week!');
-            }
-          }
-        ]
-      );
-    } catch (error) {
-      console.error('Error rescheduling notifications:', error);
-      Alert.alert('Error', 'Failed to reschedule notifications.');
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -198,13 +160,30 @@ const DashboardScreen = ({ navigation }) => {
 
         <View style={styles.todaySection}>
           <Text style={styles.sectionTitle}>Today's Schedule</Text>
-          <View style={styles.emptyState}>
-            <Ionicons name="calendar-outline" size={48} color="#a1a1aa" />
-            <Text style={styles.emptyStateTitle}>No classes today</Text>
-            <Text style={styles.emptyStateSubtitle}>
-              Add subjects and create your timetable to see today's schedule
-            </Text>
-          </View>
+          {todaySchedule.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {todaySchedule.map((classItem, index) => (
+                <View key={index} style={styles.scheduleCard}>
+                  <View style={[styles.subjectIcon, { backgroundColor: classItem.color || '#007AFF' }]}>
+                    <Ionicons name={classItem.icon || 'book'} size={20} color="#ffffff" />
+                  </View>
+                  <Text style={styles.scheduleSubject}>{classItem.subjectName}</Text>
+                  <Text style={styles.scheduleTime}>
+                    {classItem.startTime} - {classItem.endTime}
+                  </Text>
+                  <Text style={styles.scheduleRoom}>{classItem.room || 'Room TBA'}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="calendar-outline" size={48} color="#a1a1aa" />
+              <Text style={styles.emptyStateTitle}>No classes today</Text>
+              <Text style={styles.emptyStateSubtitle}>
+                Add subjects and create your timetable to see today's schedule
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.quickActions}>
@@ -245,42 +224,7 @@ const DashboardScreen = ({ navigation }) => {
           </View>
         </View>
 
-        <View style={styles.testSection}>
-          <Text style={styles.sectionTitle}>Notification Test</Text>
-          <View style={styles.actionGrid}>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.testButton]} 
-              onPress={handleTestNotification}
-            >
-              <Ionicons name="notifications" size={24} color="#FF9500" />
-              <Text style={styles.actionButtonText}>Test Instant</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.testButton]}
-              onPress={handleTestReminder}
-            >
-              <Ionicons name="alarm" size={24} color="#FF9500" />
-              <Text style={styles.actionButtonText}>Test 5s Delay</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.testButton]}
-              onPress={handleCheckScheduled}
-            >
-              <Ionicons name="list" size={24} color="#FF9500" />
-              <Text style={styles.actionButtonText}>Check Scheduled</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.testButton]}
-              onPress={handleRescheduleAll}
-            >
-              <Ionicons name="refresh" size={24} color="#FF9500" />
-              <Text style={styles.actionButtonText}>Reschedule All</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+
 
 
       </ScrollView>
@@ -377,9 +321,7 @@ const styles = StyleSheet.create({
   quickActions: {
     marginBottom: 30,
   },
-  testSection: {
-    marginBottom: 30,
-  },
+
   actionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -395,16 +337,46 @@ const styles = StyleSheet.create({
     minHeight: 80,
     justifyContent: 'center',
   },
-  testButton: {
-    backgroundColor: '#2d1b69',
-    borderWidth: 1,
-    borderColor: '#FF9500',
-  },
+
   actionButtonText: {
     fontSize: 14,
     color: '#ffffff',
     fontWeight: '500',
     marginTop: 8,
+    textAlign: 'center',
+  },
+  scheduleCard: {
+    backgroundColor: '#252545',
+    borderRadius: 12,
+    padding: 16,
+    marginRight: 12,
+    width: 140,
+    alignItems: 'center',
+  },
+  subjectIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  scheduleSubject: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  scheduleTime: {
+    fontSize: 12,
+    color: '#a1a1aa',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  scheduleRoom: {
+    fontSize: 11,
+    color: '#6b7280',
     textAlign: 'center',
   },
   logoutButton: {

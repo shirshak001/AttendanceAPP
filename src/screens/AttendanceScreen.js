@@ -29,10 +29,13 @@ const AttendanceScreen = ({ navigation }) => {
     try {
       setLoading(true);
       const classes = await AttendanceService.getTodayClassesWithAttendance();
-      setTodayClasses(classes);
+      // Ensure classes is an array to prevent crashes
+      setTodayClasses(Array.isArray(classes) ? classes : []);
     } catch (error) {
       console.error('Error loading today classes:', error);
-      Alert.alert('Error', 'Failed to load classes');
+      setTodayClasses([]); // Set empty array on error
+      // Don't show alert in production to prevent crashes
+      // Alert.alert('Error', 'Failed to load classes');
     } finally {
       setLoading(false);
     }
@@ -65,25 +68,44 @@ const AttendanceScreen = ({ navigation }) => {
 
   const handleMarkAttendance = async (classItem, status) => {
     try {
+      // Add null checks to prevent crashes
+      if (!classItem || !classItem.id || !classItem.subjectId) {
+        Alert.alert('Error', 'Invalid class information');
+        return;
+      }
+
+      // Validate status
+      const validStatuses = ['present', 'absent', 'late'];
+      if (!validStatuses.includes(status.toLowerCase())) {
+        Alert.alert('Error', 'Invalid attendance status');
+        return;
+      }
+
       const result = await AttendanceService.markAttendance(
         classItem.id,
         classItem.subjectId,
         status
       );
 
-      if (result.success) {
+      if (result && result.success) {
         Alert.alert('Success', `Attendance marked as ${status}`);
-        loadTodayClasses(); // Refresh the list
+        await loadTodayClasses(); // Refresh the list
       } else {
-        Alert.alert('Error', result.error || 'Failed to mark attendance');
+        Alert.alert('Error', result?.error || 'Failed to mark attendance');
       }
     } catch (error) {
       console.error('Error marking attendance:', error);
-      Alert.alert('Error', 'Failed to mark attendance');
+      Alert.alert('Error', 'An unexpected error occurred while marking attendance');
     }
   };
 
   const handleQuickMark = (classItem, status) => {
+    // Add null checks to prevent crashes
+    if (!classItem || !classItem.subjectName) {
+      Alert.alert('Error', 'Invalid class information');
+      return;
+    }
+
     Alert.alert(
       'Confirm Attendance',
       `Mark ${classItem.subjectName} as ${status}?`,
@@ -185,7 +207,7 @@ const AttendanceScreen = ({ navigation }) => {
           <View style={styles.attendanceActions}>
             <TouchableOpacity
               style={[styles.attendanceButton, styles.presentButton]}
-              onPress={() => handleQuickMark(classItem, AttendanceService.getAttendanceStatusValues().PRESENT)}
+              onPress={() => handleQuickMark(classItem, 'present')}
             >
               <View style={styles.buttonContent}>
                 <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
@@ -195,7 +217,7 @@ const AttendanceScreen = ({ navigation }) => {
             
             <TouchableOpacity
               style={[styles.attendanceButton, styles.lateButton]}
-              onPress={() => handleQuickMark(classItem, AttendanceService.getAttendanceStatusValues().LATE)}
+              onPress={() => handleQuickMark(classItem, 'late')}
             >
               <View style={styles.buttonContent}>
                 <Ionicons name="time" size={20} color="#ffffff" />
@@ -205,7 +227,7 @@ const AttendanceScreen = ({ navigation }) => {
             
             <TouchableOpacity
               style={[styles.attendanceButton, styles.absentButton]}
-              onPress={() => handleQuickMark(classItem, AttendanceService.getAttendanceStatusValues().ABSENT)}
+              onPress={() => handleQuickMark(classItem, 'absent')}
             >
               <View style={styles.buttonContent}>
                 <Ionicons name="close-circle" size={20} color="#ffffff" />
