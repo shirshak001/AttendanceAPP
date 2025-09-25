@@ -16,6 +16,8 @@ import { useUser } from '@clerk/clerk-expo';
 import { SignOutButton } from '../components/auth/SignOutButton';
 import NotificationService from '../services/NotificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DropdownSelector } from '../components/ui/DropdownSelector';
+import { ExportService } from '../services/ExportService';
 
 const ProfileScreen = ({ navigation }) => {
   const { user } = useUser();
@@ -86,25 +88,24 @@ const ProfileScreen = ({ navigation }) => {
     );
   };
 
-  const handleAcademicYearChange = () => {
-    const currentYear = new Date().getFullYear();
-    const years = [
-      `${currentYear-1}-${currentYear}`,
-      `${currentYear}-${currentYear+1}`,
-      `${currentYear+1}-${currentYear+2}`,
-    ];
+  const handleAcademicYearChange = async (selectedValue) => {
+    setAcademicYear(selectedValue);
+    await AsyncStorage.setItem('academic_year', selectedValue);
+  };
 
-    Alert.alert(
-      'Academic Year',
-      'Select your current academic year',
-      years.map(year => ({
-        text: year,
-        onPress: async () => {
-          setAcademicYear(year);
-          await AsyncStorage.setItem('academic_year', year);
-        },
-      })).concat([{ text: 'Cancel', style: 'cancel' }])
-    );
+  const getAcademicYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = -2; i <= 3; i++) {
+      const startYear = currentYear + i;
+      const endYear = startYear + 1;
+      const yearLabel = `${startYear}-${endYear.toString().slice(-2)}`;
+      years.push({
+        value: yearLabel,
+        label: yearLabel,
+      });
+    }
+    return years;
   };
 
   const handleExportData = () => {
@@ -117,7 +118,7 @@ const ProfileScreen = ({ navigation }) => {
           onPress: () => exportToCSV(),
         },
         {
-          text: 'PDF',
+          text: 'Report (HTML)',
           onPress: () => exportToPDF(),
         },
         { text: 'Cancel', style: 'cancel' },
@@ -125,26 +126,62 @@ const ProfileScreen = ({ navigation }) => {
     );
   };
 
-  const exportToCSV = () => {
-    // This is a placeholder - implement actual CSV export
-    Alert.alert(
-      'CSV Export',
-      'CSV export functionality will be implemented soon. Your attendance data will be exported to a CSV file.'
-    );
+  const exportToCSV = async () => {
+    try {
+      await ExportService.exportToCSV();
+    } catch (error) {
+      Alert.alert('Export Error', 'Failed to export CSV file');
+    }
   };
 
-  const exportToPDF = () => {
-    // This is a placeholder - implement actual PDF export
-    Alert.alert(
-      'PDF Export',
-      'PDF export functionality will be implemented soon. Your attendance report will be generated as a PDF.'
-    );
+  const exportToPDF = async () => {
+    try {
+      await ExportService.exportToPDF();
+    } catch (error) {
+      Alert.alert('Export Error', 'Failed to generate report');
+    }
   };
 
   const handleChangePassword = () => {
     Alert.alert(
       'Change Password',
       'Password change functionality will be implemented based on your authentication method.'
+    );
+  };
+
+  const handleResetSchedule = () => {
+    Alert.alert(
+      'Reset Schedule',
+      'This will permanently delete all your timetable and attendance data. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.multiRemove([
+                'timetable',
+                'attendance',
+                'subjects'
+              ]);
+              Alert.alert(
+                'Schedule Reset',
+                'Your schedule has been reset successfully. Please restart the app.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => navigation.navigate('Dashboard')
+                  }
+                ]
+              );
+            } catch (error) {
+              console.error('Error resetting schedule:', error);
+              Alert.alert('Error', 'Failed to reset schedule');
+            }
+          }
+        }
+      ]
     );
   };
 
@@ -254,12 +291,24 @@ const ProfileScreen = ({ navigation }) => {
         {/* Academic Settings */}
         {renderSectionHeader('Academic')}
         <View style={styles.settingsSection}>
-          {renderSettingRow(
-            'school',
-            'Academic Year',
-            academicYear,
-            handleAcademicYearChange
-          )}
+          <View style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <View style={styles.settingIcon}>
+                <Ionicons name="school" size={20} color="#007AFF" />
+              </View>
+              <View style={[styles.settingText, { flex: 1 }]}>
+                <Text style={styles.settingTitle}>Academic Year</Text>
+                <DropdownSelector
+                  label="Select Academic Year"
+                  value={academicYear}
+                  options={getAcademicYearOptions()}
+                  onSelect={handleAcademicYearChange}
+                  placeholder="Select year"
+                  style={styles.dropdownStyle}
+                />
+              </View>
+            </View>
+          </View>
 
           {renderSettingRow(
             'calendar',
@@ -272,7 +321,7 @@ const ProfileScreen = ({ navigation }) => {
             'calendar-outline',
             'Holiday Calendar',
             'Manage holiday list',
-            () => Alert.alert('Coming Soon', 'Holiday calendar will be available soon')
+            () => navigation.navigate('HolidayCalendar')
           )}
         </View>
 
@@ -298,6 +347,13 @@ const ProfileScreen = ({ navigation }) => {
             'Sync Data',
             'Sync across devices',
             () => Alert.alert('Coming Soon', 'Data sync will be available soon')
+          )}
+
+          {renderSettingRow(
+            'trash',
+            'Reset Schedule',
+            'Clear all timetable data',
+            handleResetSchedule
           )}
         </View>
 
@@ -489,6 +545,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#FF3B30',
+  },
+  dropdownStyle: {
+    marginTop: 8,
+    marginBottom: 0,
   },
 });
 

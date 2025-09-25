@@ -23,6 +23,7 @@ import AttendanceScreen from '../screens/AttendanceScreen';
 import AttendanceMarkingScreen from '../screens/AttendanceMarkingScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import { HolidayCalendarScreen } from '../screens/HolidayCalendarScreen';
 
 const Stack = createStackNavigator();
 
@@ -44,7 +45,7 @@ const AuthStack = () => {
 const AppStack = () => {
   return (
     <Stack.Navigator
-      initialRouteName="TestAuth"
+      initialRouteName="Dashboard"
       screenOptions={{
         headerShown: false,
         gestureEnabled: false,
@@ -64,6 +65,7 @@ const AppStack = () => {
       <Stack.Screen name="AttendanceMarking" component={AttendanceMarkingScreen} />
       <Stack.Screen name="History" component={HistoryScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="HolidayCalendar" component={HolidayCalendarScreen} />
     </Stack.Navigator>
   );
 };
